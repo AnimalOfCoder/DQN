@@ -2,9 +2,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as scio
 
+Config = {
+    'B': np.array([[5]]),
+    'BLX': np.array([[674, 359, 491, 173, 112]]),
+    'BLY': np.array([[674, 359, 491, 173, 112]]),
+    'BW': np.array([[10000000]]),
+    'L': np.array([[1000]]),
+    'LX': np.array([[1000]]),
+    'LY': np.array([[1000]]),
+    'PW': np.array([[46, 30, 30, 30, 30]]),
+    'rs': np.array([[-95]])
+}
 
-Config = scio.loadmat('config.mat')
-Store = scio.loadmat('store.mat')
+Store = {
+    'AL': np.zeros((2,5)),
+    'RE': np.zeros((2,5)),
+    'RQ': np.zeros((2,5)),
+    'S': np.array([[2]]),
+    'Sprio': np.zeros((2,5)),
+    'unu': np.ones((1,5))
+}
+
+# Config = scio.loadmat('config.mat')
+# Store = scio.loadmat('store.mat')
 
 class Reservation:
     def __init__(self, s, V, RQQ):
