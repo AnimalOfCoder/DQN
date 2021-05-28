@@ -1,8 +1,8 @@
-from Reservation import Reservation
 import numpy as np
-import DQNd as DQNd
-import BS as BS
-import Delay_ADMM_Alloc as Delay_ADMM_Alloc
+from Reservation import Reservation
+from DQNd import DQNd 
+from BS import BS
+from Delay_ADMM_Alloc import Delay_ADMM_Alloc 
 # DELAY BASED
 class Slice1:
     def __init__(self, s1, v, P11, ii, rt, Dc, ar, du, ru, cng1, AL1, RE1):
@@ -43,10 +43,10 @@ class Slice1:
     1个参数
     create the network, and make channels, initialize neural network
     '''
-    def initSlice(self):    
-        reservation = Reservation(1,2,3)
-        rs, L, BW, B, PW, LX, LY, BLX, BLY = reservation.generateConfigToSlice()
-        K1 = self.s1 # number of users of slice1
+    @staticmethod
+    def initSlice(s1):    
+        rs, L, BW, B, PW, LX, LY, BLX, BLY = Reservation.generateConfigToSlice()
+        K1 = s1 # number of users of slice1
         Dc = 0.1 * np.ones((1, K1)) # delay constraint of slice1
         #location matrix of the users of the slice in the LXxLY area
         #location matrix of the users in the x axis of the AXxAY area
@@ -63,7 +63,7 @@ class Slice1:
                 dist = np.linalg.norm(x1 - x2)
                 DKB1[k,b] = max(dist,1) # distane between BS and user, assume minimum 1m.
         # arrival rate of users
-        ar = 80 + np.random(0, 40,(1, K1))
+        ar = 80 + np.random.randint(0, 40,(1, K1))
 
         # power multiply by channel gain(received power)
         pg = np.zeros((K1,B))
@@ -77,7 +77,7 @@ class Slice1:
                 pg[i,j] = PW[j] - (34 + 40 * np.log10(DKB1[i,j]) + 8 * np.random.randn())# received at the user from base station, in other words transmitted power times channel gain
                 
         #Achievable data rate of users on each base station
-        R = np.zeros(K1, B)
+        R = np.zeros((K1, B))
         for i in range(0, K1):
             for j in range(0, B):
                 R[i,j]=BW * np.log2(1+(np.power(10, pg[i,j]/10) / (sum(np.power(10, pg[i,:] / 10)) - np.power(10, pg[i,j]/10) + np.power(10, rs / 10))))
@@ -92,8 +92,8 @@ class Slice1:
         ru=0# out side the iteration
 
         # todo
-        dqn1 = DQNd()
-        dqn1.createNN()
+        # dqn1 = DQNd()
+        # dqn1.createNN()
 
         P1 = np.zeros((1,B))
         v = np.zeros((1,B))
@@ -106,7 +106,7 @@ class Slice1:
     12个参数
     make resource managemet
     ''' 
-    def makeResourceManagement(self):
+    def makeResourceManagement(self, RL):
         P1=self.P11
         (K1a,B)=np.array(self.rt).shape
         a1 = 0
@@ -118,16 +118,16 @@ class Slice1:
             # becuase you have not state information and allocation
             a1=1 #randi([-9 10],1,1)/10
             v=BS.update_AL_pro(np.zeros((1,B)), self.RE1,P1,a1)
-            res = Reservation(self.s1,v,0)# send  resource update to the base stations
-            res.UpdateUnusedResource()
+            Reservation.UpdateUnusedResource(self.s1,v,np.array([0]))# send  resource update to the base stations
+            
         elif self.ii>1:# use the neural network for dynamic resource management
-            a1 = DQNd([sum(self.AL1 * P1),sum(self.du)/K1a,sum(self.ru)/K1a,sum(self.RE1 * P1)])
+            a1 = RL.choose_action([sum(self.AL1 * P1),sum(self.du)/K1a,sum(self.ru)/K1a,sum(self.RE1 * P1)])
             v = BS.update_AL_pro(self.AL1, self.RE1,P1,a1)
-            res = Reservation(self.s1,v,0)# send  resource update to the base stations  
-            res.UpdateUnusedResource()  
+            Reservation.UpdateUnusedResource(self.s1,v,np.array([0]))# send  resource update to the base stations  
+             
 
-        if sum(v)==0:# if resource for the slice is 0 the allocation to users is also 0
-            d1 = -1 * np.ones(1, np.array(self.rt).shape[0])   
+        if np.sum(v)==0:# if resource for the slice is 0, the allocation to users is also 0
+            d1 = -1 * np.ones((1, np.array(self.rt).shape[0]))   
             r1 = np.zeros(np.array(self.rt).shape[0], 1)
         else:# ADMM
             rrr=self.rt
@@ -135,11 +135,11 @@ class Slice1:
             rt = rrr
             yR = y * rt
             # sum rate of users
-            r1 = sum(yR,2)
+            r1 = np.sum(yR, axis=1)
             # delay of the users
-            d1 = -1 * np.ones(1,K1a)
-            for i in range(1, K1a):
-                d1[0,i] = 1 / (r1[i,0] - self.ar[0,i])
+            d1 = -1 * np.ones((1,K1a))
+            for i in range(0, K1a):
+                d1[0,i] = 1 / (r1[i] - self.ar[0, i])
             
         delay = d1 #show the delay
         min_max_D=[min(d1), max(d1)]# show the minimum delay and the maximum delay out of all the users of the slice
@@ -148,25 +148,28 @@ class Slice1:
         dd = d1*1000#change to ms
         ndu=np.zeros((1,K1a))
         nru=np.zeros((1,K1a))
-        for uk1 in range(1,K1a):
-            if dd[0, uk1]<0 or dd(0,uk1) > self.Dc[0,uk1]*1000: 
+        for uk1 in range(0,K1a):
+            if dd[0,uk1]<0 or dd[0,uk1] > self.Dc[0,uk1]*1000: 
                 ndu[0,uk1]=0
                 nru[0,uk1]=0
             else:
                 ndu[0,uk1]= -0.5 * np.tanh(0.06 * (dd[0,uk1]-70)) + 0.5 
-                nru[0,uk1]=min(1,(self.ar[0,uk1] + 1 / self.Dc[0,uk1]) / r1[uk1,0])
+                nru[0,uk1]=min(1,(self.ar[0,uk1] + 1 / self.Dc[0,uk1]) / r1[uk1])
 
         du=ndu
         ru=nru
-        return du,ru,d1
+
+        
+        return P1,du,ru,v,a1,d1
 
 
     '''
     2个参数
     '''
-    def removeSliceFromResourceTable(self):
-        if self.s1 != 0:
-            reser = Reservation(self.s1,0)
+    @staticmethod
+    def removeSliceFromResourceTable(s1):
+        if s1 != 0:
+            reser = Reservation(s1,0)
             reser.deleteSlice()
         else:
             print( 'undefined number of parameters')   

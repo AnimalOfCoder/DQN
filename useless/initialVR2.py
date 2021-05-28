@@ -35,7 +35,6 @@ class initialVR2:
         # res2 is ID for slice2.
     '''
     
-    @staticmethod
     def initial_VR2(rtV, Q, rtV2, Q2):
         print('filtering feasiblity of user demands, removes if not feasible...\n')
         #initial virtual resource allocation of the slice in the base stations
@@ -60,41 +59,41 @@ class initialVR2:
         accepF2=np.zeros((1,K2))#how much percent of the user is accepted
         copyr2=rtV2
         wh=0
-        while wh<=K*B+K2*B2:
-            maxr1=max(max(copyr))# the smallest user bs distance combination
-            maxr2=max(max(copyr2))# the smallest user bs distance combination    for i=1:1:K
+        while wh <= K*B+K2*B2:
+            maxr1=copyr.max()# the smallest user bs distance combination
+            maxr2=copyr2.max()# the smallest user bs distance combination    for i=1:1:K
             if maxr1>maxr2:
                 maxr=maxr1
                 for i in range(0, K):
                     for m in range(0, B):
-                        if copyr[i,m]==maxr and (accepF[1,i]+1)!=2: # plus one is used to ignore very small fraction
-                            if un[1,m] >= qyu[i,m]*(1-accepF[1,i]) and qyu[i,m]>0 and un[1,m]>0:
-                                VR[1,m]=VR[1,m]+qyu[i,m]*(1-accepF[1,i])
-                                un[1,m]=un[1,m]-qyu[i,m]*(1-accepF[1,i])
-                                accepF[1,i]=1
-                            elif un[1,m]<qyu[i,m]*(1-accepF[1,i]) and  qyu[i,m]>0 and un[1,m]>0:
-                                VR[1,m]=VR[1,m]+un[1,m]
-                                un[1,m]=0
-                                accepF[1,i]=accepF[1,i]+un[1,m]/(qyu[i,m]*(1-accepF[1,i]))
+                        if copyr[i,m]==maxr and (accepF[0,i]+1)!=2: # plus one is used to ignore very small fraction
+                            if un[0,m] >= qyu[i,m]*(1-accepF[0,i]) and qyu[i,m]>0 and un[0,m]>0:
+                                VR[0,m]=VR[0,m]+qyu[i,m]*(1-accepF[0,i])
+                                un[0,m]=un[0,m]-qyu[i,m]*(1-accepF[0,i])
+                                accepF[0,i]=1
+                            elif un[0,m]<qyu[i,m]*(1-accepF[0,i]) and  qyu[i,m]>0 and un[0,m]>0:
+                                VR[0,m]=VR[0,m]+un[0,m]
+                                un[0,m]=0
+                                accepF[0,i]=accepF[0,i]+un[0,m]/(qyu[i,m]*(1-accepF[0,i]))
                             
                             copyr[i,m]=0
             else:
                 maxr=maxr2
                 for i in range(0, K2):
                     for m in range(0, B2):
-                        if copyr2[i,m]==maxr and (accepF2[1,i]+1)!=2: # plus one is used to ignore very small fraction
-                            if un[1,m]>=qyu2[i,m]*(1-accepF2[1,i]) and qyu2[i,m]>0 and un[1,m]>0:
-                                VR2[1,m]=VR2[1,m]+qyu2[i,m]*(1-accepF2[1,i])
-                                un[1,m]=un[1,m]-qyu2[i,m]*(1-accepF2[1,i])
-                                accepF2[1,i]=1
-                            elif un[1,m]<qyu2[i,m]*(1-accepF2[1,i]) and  qyu2[i,m]>0 and un[1,m]>0:
-                                VR2[1,m]=VR2[1,m]+un[1,m]
-                                un[1,m]=0
-                                accepF2[1,i]=accepF2[1,i]+un[1,m]/(qyu2[i,m]*(1-accepF2[1,i]))
+                        if copyr2[i,m]==maxr and (accepF2[0,i]+1)!=2: # plus one is used to ignore very small fraction
+                            if un[0,m]>=qyu2[i,m]*(1-accepF2[0,i]) and qyu2[i,m]>0 and un[0,m]>0:
+                                VR2[0,m]=VR2[0,m]+qyu2[i,m]*(1-accepF2[0,i])
+                                un[0,m]=un[0,m]-qyu2[i,m]*(1-accepF2[0,i])
+                                accepF2[0,i]=1
+                            elif un[0,m]<qyu2[i,m]*(1-accepF2[0,i]) and  qyu2[i,m]>0 and un[0,m]>0:
+                                VR2[0,m]=VR2[0,m]+un[0,m]
+                                un[0,m]=0
+                                accepF2[0,i]=accepF2[0,i]+un[0,m]/(qyu2[i,m]*(1-accepF2[0,i]))
                             copyr2[i,m]=0
 
 
-            if (max(max(copyr))==0 and max(max(copyr2))==0) or (min(accepF)==1 and min(accepF2)==1):
+            if (copyr.max()==0 and copyr2.max()==0) or (accepF.min()==1 and accepF2.min()==1):
                 break
 
             wh=wh+1
@@ -102,22 +101,22 @@ class initialVR2:
 
         accept=np.floor(accepF)
         accept2=np.floor(accepF2)
-        if sum(accept)>=1: # check if there is at leasst one user fully accepted
+        if np.sum(accept) >= 1: # check if there is at leasst one user fully accepted
             S, _ = Reservation.getUnusedResourceAndNumOfSlices()
             res=S+1
             V=VR
             RQ=np.zeros((1,B))
-            Reservation(res,np.zeros((1,B)),RQ,0).initialization()
+            Reservation(res,np.zeros((1,B)),RQ).initialization()
         else:
             res=0 # reject the slice. no enouph resource
             V=np.zeros((1,B))
 
-        if sum(accept2)>=1: # check if there is at leasst one user fully accepted
+        if np.sum(accept2)>=1: # check if there is at leasst one user fully accepted
             S, _ = Reservation.getUnusedResourceAndNumOfSlices()
             res2=S+1
             V2=VR2
             RQ2=np.zeros((1,B))
-            Reservation(res2,np.zeros((1,B)),RQ2,0).initialization()
+            Reservation(res2,np.zeros((1,B)),RQ2).initialization()
         else:
             res2=0 # reject the slice. no enouph resource
             V2=np.zeros((1,B))

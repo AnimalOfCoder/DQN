@@ -19,7 +19,7 @@ class Delay_ADMM_Alloc:
         # this is called by the delay constrained slices for their physical resource allocation
         # Detailed explanation goes here
         #initializations
-        RO = 1000 * (max(max(rt)) ** 2) #penality 
+        RO = 1000 * ((np.max(rt)) ** 2) #penality 
         (K,B) = np.array(rt).shape
         theta = np.zeros((K,B))
         Y = np.zeros((K,B)) 
@@ -38,18 +38,17 @@ class Delay_ADMM_Alloc:
             for i in range(0, K):   
                 if (ar[0, i] / ((sum(pY[i, :] * rt[i,:]) - ar[0, i])**2)) <= 100 and sum(pY[i, :] * rt[i,:]) > ar[0, i] + 1/Dc[0,i]: # if delay less than 0.1 and when multiplied with arrival is arround 10
                     for j in range(0, B):
-                        Y[i,j] =Z(i,j)-theta[i,j]/RO+(rt(i,j)/RO)*(ar[0, i]/((sum(pY[i, :] * rt[i,:]) - ar[0, i])**2))
+                        Y[i,j] =Z[i,j]-theta[i,j]/RO+(rt[i,j]/RO)*(ar[0, i]/((sum(pY[i, :] * rt[i,:]) - ar[0, i])**2))
                 else:
                     for j in range(0, B):
-                        Y[i,j]=Z(i,j)-theta[i,j]/RO
-                max(0,Y[i,:])
+                        Y[i,j]=Z[i,j]-theta[i,j]/RO
+                        
                 # now check if the delay is between zero and upper bound
                 if (((1/(sum(Y[i,:] * rt[i,:])-ar[0, i]))>Dc[0,i]) or ((1/(sum(Y[i,:] * rt[i,:])-ar[0, i]))<0)):
                     yud=(1 / Dc[0,i]+ar[0, i]-sum(Y[i,:] * rt[i,:]))*(RO/sum(rt[i,:]**2))
                     for j in range(0, B):
                         if V[0,j]>0:
-                            Y[i,j]=Y[i,j]+(yud)*(rt(i,j)/RO)
-                max(0,Y[i,:])
+                            Y[i,j]=Y[i,j]+(yud)*(rt[i,j]/RO)
 
             #bs side
             for i in range(0, B):
@@ -73,12 +72,14 @@ class Delay_ADMM_Alloc:
                         Z[:,i]=Z[:,i]+accessible * (abyusm/sizer) 
                     else:
                         z=Z[:,i].T
-                        while sum(max(0, z-min(z[np.nonzero(z)]))) > 1:
-                            z = max(0,z-min(z[np.nonzero(z)]))
-
+                        _z = z-min(z[np.nonzero(z)])
+                        _z = np.where(_z > 0, _z, 0)
+                        # while sum(_z) > 1:
+                        if sum(_z) > 1:
+                            z = _z
                         vd=sum(z[np.nonzero(z)]) - 1
                         z=z-vd / z[np.nonzero(z)].shape[0]
-                        z=max(0,z)
+                        z=np.where(z > 0, z, 0)
                         Z[:,i]=z.T
 
             # end# if sum of y is equal to bs break loop o
@@ -98,6 +99,6 @@ class Delay_ADMM_Alloc:
                 yold=Y
             
             for i in range(0, K):
-                Y[i,:]=Z[i,:] * V[1,:]
+                Y[i,:]=Z[i,:] * V[0,:]
 
         return Y

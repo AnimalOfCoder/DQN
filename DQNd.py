@@ -36,7 +36,7 @@ class DQNd:
 
         # initialize zero memory [s, a, r, s_]
         self.memory=np.zeros((self.memory_size, self.n_features+2))# a matrix of replay memoyr with columns 4 for state, 1 for action, 1 for reward  memoryr
-
+        tf.reset_default_graph()
         # consist of [target_net, evaluate_net]
         self._build_net()
         t_params = tf.get_collection('target_net_params')

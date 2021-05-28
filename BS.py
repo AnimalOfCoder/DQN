@@ -10,7 +10,7 @@ class BS:
     '''
     @staticmethod
     def update_AL_pro(AL,RE,P,a):
-        B = np.array(RE)[1]
+        B = np.array(RE).shape[0]
         if a < 0:
             GA=sum(AL * P) # change the the allocation in the base stations to global resouce fraction view 0f the slice
             Gupdate= GA + GA * a #calculate the global updated resource fraction relative to all base statins
